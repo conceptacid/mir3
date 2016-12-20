@@ -1,4 +1,8 @@
+######################################################################################################################
 # normalize, resample and chop all medley db files while retaining the directory structure
+# elapsed time ca 24m.
+######################################################################################################################
+
 import os, sys, math, csv, datetime
 import numpy as np
 import scipy.io.wavfile as wave
@@ -11,9 +15,8 @@ chunk_duration = 3
 chunk_duration_samples = sampling_rate * chunk_duration    
 
 
-
 INPUT_DIR = '/media/ubuntu/AE08E30B08E2D17F/MedleyDB/Audio'
-OUTPUT_DIR = '/media/ubuntu/AE08E30B08E2D17F/MedleyDB_Chop'
+OUTPUT_DIR = '/media/ubuntu/DATA/MIR/Chopped'
 
 t0 = datetime.datetime.now()
 
