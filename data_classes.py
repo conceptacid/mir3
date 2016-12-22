@@ -37,6 +37,11 @@ instrument_groups = np.array(list(instrument_by_group.keys()))
 # one-hot vectors for each instrument group
 vector_by_class = np.eye(len(instrument_groups))
 
+class_one_hot_by_name = {}
+for i in range(instrument_groups.shape[0]):
+	class_one_hot_by_name[ instrument_groups[i] ] = vector_by_class[i]
+
+
 def collect_chunks_per_instrument(medley_audio_path, medley_chopped_path, name, chunks_by_instrument):
 		dir = os.path.join(medley_audio_path, name)
 		yaml_file = name + '_METADATA.yaml'

@@ -8,9 +8,6 @@ import math
 import numpy as np
 from data_classes import *
 
-MEDLEY_DATA_DIR = "/media/ubuntu/AE08E30B08E2D17F/MedleyDB/Audio"
-CHUNK_DIR = "/media/ubuntu/DATA/MIR/Chopped"
-OUTPUT_DIR = "/media/ubuntu/DATA/MIR/MiniExperiment40k"
 
 
 ################################################################################################################
@@ -46,7 +43,7 @@ def prepare_set(output_dir, set_name, num_chunks, chunks_per_instrument):
 			if num_chunks == 0:
 				done = True
 				break
-				
+
 			if len(chunks) == 0: continue
 			chunk = chunks.pop(0)
 			csv_writer.writerow([instrument, chunk])	
@@ -57,11 +54,17 @@ def prepare_set(output_dir, set_name, num_chunks, chunks_per_instrument):
 
 ################################################################################################################	
 
-chunks_per_song, chunks_per_instrument = collect_chunks(MEDLEY_DATA_DIR, CHUNK_DIR)
+
 
 #num_chunks_per_instrument = {}
 #for k, v in chunks_per_instrument.items():
 #    num_chunks_per_instrument[k] = len(v)
-    
-prepare_set(OUTPUT_DIR, 'train', 40000, chunks_per_instrument)  
-prepare_set(OUTPUT_DIR, 'test', 10000, chunks_per_instrument)  
+
+MEDLEY_DATA_DIR = "/media/ubuntu/AE08E30B08E2D17F/MedleyDB/Audio"
+CHUNK_DIR = "/media/ubuntu/DATA/MIR/Chopped"
+OUTPUT_DIR = "/media/ubuntu/DATA/MIR/MiniExperiment5k"
+
+chunks_per_song, chunks_per_instrument = collect_chunks(MEDLEY_DATA_DIR, CHUNK_DIR)
+
+prepare_set(OUTPUT_DIR, 'train', 5000, chunks_per_instrument)  
+prepare_set(OUTPUT_DIR, 'test', 1000, chunks_per_instrument)  

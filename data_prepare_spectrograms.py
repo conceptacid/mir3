@@ -7,7 +7,7 @@ import numpy as np
 import scipy.io.wavfile as wave
 from spectrograms import *
 
-EXPERIMENT_DIR = "/media/ubuntu/DATA/MIR/MiniExperiment40k"
+EXPERIMENT_DIR = "/media/ubuntu/DATA/MIR/MiniExperiment5k"
 CHUNK_DIR = "/media/ubuntu/DATA/MIR/Chopped"
 expected_sample_rate = 22050
 
@@ -30,7 +30,7 @@ def read_all(experiment_dir, data_dir, dataset_name):
 	return np.stack(data)
 
 
-def preprocess_dataset(experiment_dir, medley_db_chunk_dir, dataset_name, num_filt=128):
+def preprocess_dataset(experiment_dir, medley_db_chunk_dir, dataset_name, num_filt=128, generate_mean=True):
 	dataset_path = os.path.join(experiment_dir, dataset_name)
 	if not os.path.exists(dataset_path):
 		os.mkdir(dataset_path)
@@ -82,25 +82,24 @@ def preprocess_dataset(experiment_dir, medley_db_chunk_dir, dataset_name, num_fi
 
 	print("\n")
 	
+	if generate_mean:
+		print("Step 2/3 calculation FFT mean, stdev....")
+		data = read_all(experiment_dir, ffc_dir, dataset_name)
+		print("fft data shape", data.shape)
+		fft_mean = np.mean(data, axis = 0)
+		fft_stddev = np.std(data, axis = 0)
+		np.save(os.path.join(dataset_path, "fft_mean"), fft_mean)
+		np.save(os.path.join(dataset_path, "fft_std"), fft_stddev)
+		print("FFT shape=", fft_mean.shape)
 
-	print("Step 2/3 calculation FFT mean, stdev....")
-	
-	data = read_all(experiment_dir, ffc_dir, dataset_name)
-	print("fft data shape", data.shape)
-	fft_mean = np.mean(data, axis = 0)
-	fft_stddev = np.std(data, axis = 0)
-	np.save(os.path.join(dataset_path, "fft_mean"), fft_mean)
-	np.save(os.path.join(dataset_path, "fft_std"), fft_stddev)
-	print("FFT shape=", fft_mean.shape)
-
-	print("Step 3/3 calculation mel-FFT mean, stdev....")
-	data = read_all(experiment_dir, mffc_dir, dataset_name)
-	print("mel-fft data shape", data.shape)
-	mfft_mean = np.mean(data, axis = 0)
-	mfft_stddev = np.std(data, axis = 0)
-	np.save(os.path.join(dataset_path, "mfft_mean"), mfft_mean)	
-	np.save(os.path.join(dataset_path, "mfft_std"), mfft_stddev)
-	print("mel-FFT shape=", mfft_mean.shape)
+		print("Step 3/3 calculation mel-FFT mean, stdev....")
+		data = read_all(experiment_dir, mffc_dir, dataset_name)
+		print("mel-fft data shape", data.shape)
+		mfft_mean = np.mean(data, axis = 0)
+		mfft_stddev = np.std(data, axis = 0)
+		np.save(os.path.join(dataset_path, "mfft_mean"), mfft_mean)	
+		np.save(os.path.join(dataset_path, "mfft_std"), mfft_stddev)
+		print("mel-FFT shape=", mfft_mean.shape)
 
 			#chunk_path = os.path.join(medley_db_chunk_dir, chunk_relative_path)
 
@@ -111,8 +110,8 @@ def preprocess_dataset(experiment_dir, medley_db_chunk_dir, dataset_name, num_fi
 
 t0 = datetime.datetime.now()
 
-#preprocess_dataset(EXPERIMENT_DIR, CHUNK_DIR, 'train')
-preprocess_dataset(EXPERIMENT_DIR, CHUNK_DIR, 'test')
+preprocess_dataset(EXPERIMENT_DIR, CHUNK_DIR, 'train')
+preprocess_dataset(EXPERIMENT_DIR, CHUNK_DIR, 'test', generate_mean = False)
 
 t1 = datetime.datetime.now()
 print("elapsed ", (t1-t0))		

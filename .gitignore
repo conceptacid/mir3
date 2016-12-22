@@ -1,4 +1,8 @@
 .ipynb_checkpoints
+summary
+model
+model-*
+fft-model
 audio
 samples
 __pycache__
