@@ -5,7 +5,7 @@ The repository contains the source code for music instrument recognition impleme
 The model was trained using the MedleyDB dataset
 
 ## Prediction
-- After cloning the repository, run sh_download_model_1.sh
+- After cloning the repository, run **sh_download_model_1.sh**
 - Then run **predict.py <path-to-wave-file>**
 
 ## Training
