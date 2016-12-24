@@ -1,137 +1,121 @@
-import os, sys, csv, ast
+import os, sys, math
+import numpy as np
 import tensorflow as tf
-import numpy
-import scipy
-#import pylab
 import scipy.io.wavfile as wave
 
-from spectrograms import *
+from config import CONFIG
+from subprocess import call
+from random import shuffle
+from model import build_model
 from data_classes import *
+from spectrograms import *
 
+n_classes = vector_by_class.shape[0]
 
-song_name = "ClaraBerryAndWooldog_Boys"
-song_suffix = "04_03"
+chunk_duration             = CONFIG['chunk_duration']
+supported_sampling_rate    = CONFIG['supported_sampling_rate']
+silence_level_threshold_db = CONFIG['silence_level_threshold_db']
+out_track_temp_path        = CONFIG['playout_track_temp_path']
+model_name                 = CONFIG['predict_on_model']
+directory_of_mean_and_dev  = CONFIG['directory_of_mean_and_dev']
+init_load_model_from       = os.path.join(CONFIG['model_dir'], model_name)
 
-chunk_duration_sec = 1.0
-max_chunks = 0
+if __name__ == "__main__":
 
-n_bands   = 127
-n_samples = 98 # 198
-n_classes = 12
-learning_rate = 0.000001 #0.0000001
-max_epochs = 500
-max_steps = 0 #10000
-batch_size = 200
+	wavefile = sys.argv[1]
+	print("sys.argv", sys.argv)
+	print("loading wave ", wavefile)
+	if not os.path.exists(wavefile):
+		raise "input wave file not found"
 
-model_name = 'not_used'
-model_path = './model/model-100'
+	mean = None
+	stddev = None
+	normalize_data = False
 
-if __name__ == "__main__":	
+	mean_path = os.path.join(directory_of_mean_and_dev, 'mfft_mean.npy')
+	std_path = os.path.join(directory_of_mean_and_dev, 'mfft_std.npy')
+	if os.path.exists(mean_path) and os.path.exists(std_path):
+		mean = np.load(mean_path)
+		stddev = np.load(std_path)
+		normalize_data = True
+		print("Found mean, std files. Data shape=", mean.shape)
+	else:
+		raise "Could not read man/stddev files"
 
-	#with open(os.path.join(spectrogram_path, 'onehot.csv'), 'rt') as csvfile:
-	#	reader = csv.reader(csvfile, delimiter=';', quotechar='|')
-	#	for row in reader:
-	#		name, one_hot = row
-	#		one_hot = ast.literal_eval(one_hot)
-	#		class_one_hot_by_name[name] = np.array(one_hot)
+	# read the mean, stddev and determine the data shape
+	data_shape = mean.shape
+	n_bands, n_samples = data_shape
 
+	print("mean_shape = ", data_shape)
 
-	classes = ['bells, chimes', 'banjo, mandolin', 'drums or perc', 'bass', 'electric guitar', 'guitar', 'brass', 'keyboards', 'vibraphone', 'vocals or speech', 'strings', 'woodwind']
+	sampling_rate, data = wave.read(wavefile)
 
+	if sampling_rate != supported_sampling_rate:
+		if os.path.exists(out_track_temp_path):
+			os.remove(out_track_temp_path)
+		call(["sox", wavefile, "-r", str(supported_sampling_rate), out_track_temp_path])
+		sampling_rate, data = wave.read(out_track_temp_path)
+		if sampling_rate != supported_sampling_rate:
+			raise "Bad sampling rate: only "+str(supported_sampling_rate)+" is supported!"
 
-	with tf.Graph().as_default():
-			g = tf.Graph()
-			with g.as_default():
+	chunk_duration_samples = sampling_rate * chunk_duration    
 
-				print("---------------------------------------------------------------------------------------------------------------------------------")
-				print("Initializing Model...")
-				print("---------------------------------------------------------------------------------------------------------------------------------")
-				X, Y, keep_prob, Y_pred, cost, optimizer, summary = build_model(n_bands, n_samples, n_classes, learning_rate, model_name=model_name)
-			
-				sess = tf.Session(graph=g)
-				saver = tf.train.Saver()
-				saver.restore(sess, model_path)
-				print("Model ", model_path, "restored")
-				#init = tf.global_variables_initializer()
-				#sess.run(init)
+	# normalize all
+	data = normalize_wave(data)
 
-				print("---------------------------------------------------------------------------------------------------------------------------------")
-				print("Reading Wave...")
-				print("---------------------------------------------------------------------------------------------------------------------------------")
-				wav_path = os.path.join(ROOT_PATH, song_name, song_name + "_RAW", song_name+"_RAW_" + song_suffix + ".wav")
-				sample_rate, wave_signal = wave.read(wav_path)
+	max_chunks = data.shape[0] // (sampling_rate*chunk_duration)
 
+	g = tf.Graph()
+	with g.as_default():
+		with tf.Session(graph=g) as sess:
+			X, _, keep_prob, Y_pred, _, _, _, _, _ = build_model(n_bands, n_samples, n_classes, 0.0, model_name=model_name)
 
+			init = tf.global_variables_initializer()
+			sess.run(init)
 
+			saver = tf.train.Saver()
+			if len(init_load_model_from) > 0:
+				print("LOADING MODEL FROM", init_load_model_from)
+				saver.restore(sess, init_load_model_from)
+			else:
+				print("Can't read the model")
+				raise "Can't read the model"
+				
 
+			for chunk_index in range(max_chunks-1):
 
-				total_duration = wave_signal.shape[0]
-				chunk_duration = int(chunk_duration_sec * sample_rate)
-				mx = max(wave_signal.min(), wave_signal.max(), key=abs)
+				#print("sampling_rate=", sampling_rate, "chunk_duration_samples", chunk_duration_samples)
 
+				start = chunk_index * chunk_duration_samples / sampling_rate
 
-				# normalize each chunk (!?????)
-				wave_signal = wave_signal/(mx + 1e-08)
+				start = str(int(start // 60)) + ":" + str(int(start % 60)).ljust(10)
 
+				# get a little chunk of samples
+				chunk = data[ chunk_index * chunk_duration_samples : (chunk_index+1) * chunk_duration_samples]
 
+				mx = max(chunk.min(), chunk.max(), key=abs)
+				mx = abs(mx)
+				mx = 20*math.log10(mx)
 
-				print("Opened ",wav_path)
-				print("Sample rate", sample_rate)
-				print("Duration ",  total_duration // sample_rate, " sec")
-				print("Max ", mx)
-				print("        ")
+				# filter out silence
+				if mx < silence_level_threshold_db:
+					#print("offset", start, "silence detected", mx, "dB")
+					print("offset", start, "-")
+				else:
+					frames = frame_signal(sampling_rate, chunk)
+					fft = calculate_fft(sampling_rate, frames)
+					mfcc = calculate_mfcc(fft)
+					#print("shapes ", fft.shape, mfcc.shape)
+					#mfcc = spectrogram(sampling_rate, chunk)
+					mfcc = (mfcc.T - mean)/stddev;
+					batch_xs = np.stack([mfcc])
+					batch_xs = np.expand_dims(batch_xs, axis=3)
 
-				chunk_index = 0
-				offset = 0
-				while offset <= total_duration:
-					
-					signal = signal = wave_signal[ offset : (offset + chunk_duration)]
-					mx = max(signal.min(), signal.max(), key=abs)
-					
-					
-
-
-					
-
-					frames = frame_signal(sample_rate, signal)
-					filter_banks = calculate_fft(sample_rate, frames)
-					mfcc = calculate_mfcc(filter_banks)
-
-					# normalize
-					filter_banks -= (numpy.mean(filter_banks, axis=0) + 1e-8)
-					mfcc -= (numpy.mean(mfcc, axis=0) + 1e-8)
-
-					data = numpy.stack([mfcc.T])
-					data = numpy.expand_dims(data, axis=3)
-
-					if data.shape != (1,n_bands, n_samples, 1):
-						break;
-
-					#print("shape=", data.shape)
-					
-					prediction = sess.run([Y_pred], feed_dict={X: data, keep_prob: 1.0})[0][0]
-					index = numpy.argmax(prediction)
-					#print("Prediction=", prediction, classes[index], "probability", prediction[index])
-					
-
-					print("Prediction=", classes[index], "probability", prediction[index], "Chunk ", chunk_index, offset / sample_rate, "Max ", mx)
-
-
-
-					if max_chunks and chunk_index >= max_chunks:
-						break
-					chunk_index = chunk_index + 1
-					offset += chunk_duration
-
-
-
-
-
-	#signal = signal/(mx + 1e-08)
-
-	
-
-			
-		
-
-
+					predicted_one_hot = sess.run([Y_pred], feed_dict={X: batch_xs, keep_prob: 1.0})[0]
+					result_dev = np.std(predicted_one_hot)
+					if result_dev < 0.001:
+						print("offset", start, "I don't know what is that!")							
+					else:
+						class_index = np.argmax(predicted_one_hot)
+						confidence = predicted_one_hot[0, class_index]*100
+						print("offset", start, " ", instrument_groups[class_index].rjust(15), " ", confidence, "%", "dev", result_dev)	

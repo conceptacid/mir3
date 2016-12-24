@@ -1,9 +1,11 @@
 .ipynb_checkpoints
 summary
 model
+model1
 model-*
 fft-model
 audio
 samples
 __pycache__
 *.tar.gz
+temp.wav

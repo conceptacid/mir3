@@ -15,6 +15,7 @@ class Medley:
 		for i, v in class_one_hot_by_name.items():
 			print(v, i)
 
+		
 		self.chunks['train'] = []
 		self.chunks['test'] = []
 
@@ -32,7 +33,10 @@ class Medley:
 		self.batch_index['train'] = 0
 		self.batch_index['test'] = 0
 
-		
+		self.chunks['special'] = [0]
+		self.chunks['special'][0] = self.chunks['test'][0]
+		print("*****Special item is ", self.chunks['special'][0])
+
 		self.normalize_data = False
 
 		mean_path = os.path.join(self.spectrogram_path, 'train/mfft_mean.npy')                        # add m
@@ -70,8 +74,9 @@ class Medley:
 			data = (data-self.mean)/self.stddev
 		return data
 
-	def new_epoch(self):
-		self.train_index = 0
+	def new_epoch(self, train_index = 0, test_index = 0):
+		self.batch_index['train'] = train_index
+		self.batch_index['test'] = test_index
 		shuffle(self.chunks['train'])
 		shuffle(self.chunks['test'])
 
@@ -101,3 +106,14 @@ class Medley:
 		xs = np.stack(batch[:,0])
 		ys = np.stack(batch[:,1])
 		return xs, ys, has_more_data
+
+	# returns one predefined item
+	def get_special_batch(self):
+		batch_filenames = self.chunks['special'][ 0 : 1 ]
+
+		batch = np.stack( [ [self.read_data(entry[0]), entry[1]] for entry in batch_filenames ] )
+		#print(batch)
+		xs = np.stack(batch[:,0])
+		ys = np.stack(batch[:,1])
+
+		return xs,ys, True

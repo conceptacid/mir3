@@ -60,11 +60,11 @@ def prepare_set(output_dir, set_name, num_chunks, chunks_per_instrument):
 #for k, v in chunks_per_instrument.items():
 #    num_chunks_per_instrument[k] = len(v)
 
-MEDLEY_DATA_DIR = "/media/ubuntu/AE08E30B08E2D17F/MedleyDB/Audio"
-CHUNK_DIR = "/media/ubuntu/DATA/MIR/Chopped"
-OUTPUT_DIR = "/media/ubuntu/DATA/MIR/MiniExperiment5k"
+MEDLEY_DATA_DIR = "/media/ubuntu/AE08E30B08E2D17F/MedleyDB/Audio"                                     # TODO: config
+CHUNK_DIR = "/media/ubuntu/DATA/MIR/Chopped"                                                          # TODO: config
+OUTPUT_DIR = "/media/ubuntu/DATA/MIR/MiniExperiment5k"                                                # TODO: config
 
 chunks_per_song, chunks_per_instrument = collect_chunks(MEDLEY_DATA_DIR, CHUNK_DIR)
 
-prepare_set(OUTPUT_DIR, 'train', 5000, chunks_per_instrument)  
-prepare_set(OUTPUT_DIR, 'test', 1000, chunks_per_instrument)  
+prepare_set(OUTPUT_DIR, 'train', 5000, chunks_per_instrument)                                         # TODO: config
+prepare_set(OUTPUT_DIR, 'test', 1000, chunks_per_instrument)                                          # TODO: config

@@ -9,14 +9,14 @@ import scipy.io.wavfile as wave
 from subprocess import call
 from spectrograms import normalize_wave
 
-sampling_rate = 22050
-silence_level_threshold_db = -50
-chunk_duration = 3     
+sampling_rate = 22050                                                     # TODO: config
+silence_level_threshold_db = -50                                          # TODO: config
+chunk_duration = 3                                                        # TODO: config
 chunk_duration_samples = sampling_rate * chunk_duration    
 
 
-INPUT_DIR = '/media/ubuntu/AE08E30B08E2D17F/MedleyDB/Audio'
-OUTPUT_DIR = '/media/ubuntu/DATA/MIR/Chopped'
+INPUT_DIR = '/media/ubuntu/AE08E30B08E2D17F/MedleyDB/Audio'                # TODO: config
+OUTPUT_DIR = '/media/ubuntu/DATA/MIR/Chopped'                              # TODO: config
 
 t0 = datetime.datetime.now()
 

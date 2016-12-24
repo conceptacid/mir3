@@ -33,7 +33,7 @@ def conv2d(x, n_output,
 
 	print("conv2d layer", x.get_shape())
 
-	with tf.variable_scope(name or 'conv2d', reuse=reuse):
+	with tf.variable_scope(name or 'mir3_conv2d', reuse=reuse):
 		W = tf.get_variable(
 			name='W',
 			shape=[k_h, k_w, x.get_shape()[-1], n_output],
@@ -85,7 +85,7 @@ def linear(x, n_output, name=None, activation=tf.nn.sigmoid, reuse=None):
 
 	print("Linear layer input=", n_input, "output=", n_output)
 
-	with tf.variable_scope(name or "fc", reuse=reuse):
+	with tf.variable_scope(name or "mir3_fc", reuse=reuse):
 		W = tf.get_variable(
 			name='W',
 			shape=[n_input, n_output],
@@ -151,7 +151,7 @@ def build_model(n_bands, n_samples, n_classes, learning_rate, model_name='medley
 	h = linear(h, 2048, name='fc_layer_1', activation=activation_fn)[0]
 	h = linear(h, 2048, name='fc_layer_2', activation=activation_fn)[0]
 	h = linear(h, 2048, name='fc_layer_3', activation=activation_fn)[0]
-	h = linear(h, 2048, name='fc_layer_4', activation=activation_fn)[0]
+	h, w4 = linear(h, 2048, name='fc_layer_4', activation=activation_fn)
 	#h = linear(h, 1024, name='fc_layer_2', activation=activation_fn)[0]
 	#h = linear(h, 512, name='fc_layer_3', activation=activation_fn)[0]
 	#h = linear(h, 256, name='fc_layer_4', activation=activation_fn)[0]
@@ -183,7 +183,7 @@ def build_model(n_bands, n_samples, n_classes, learning_rate, model_name='medley
 		tf.summary.scalar('cross_entropy', cross_entropy)
 		tf.summary.scalar('train_accuracy', accuracy)
 	summary = tf.summary.merge_all()
-	return X, Y, keep_prob, Y_pred, cross_entropy, optimizer, summary
+	return X, Y, keep_prob, Y_pred, cross_entropy, optimizer, summary, accuracy, w4
 
 
 
